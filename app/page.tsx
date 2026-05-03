@@ -1,41 +1,59 @@
-async function checkConnection(): Promise<{ ok: boolean; message: string }> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+import type { Metadata } from 'next'
+import { getTopics } from '@/lib/queries'
+import TopicCard from '@/components/topic-card'
+import SearchBar from '@/components/search-bar'
 
-  if (!url || !key) {
-    return { ok: false, message: 'Environment variables not set' }
-  }
-
-  try {
-    const res = await fetch(`${url}/rest/v1/`, {
-      headers: { apikey: key },
-      cache: 'no-store',
-    })
-    if (res.ok) {
-      return { ok: true, message: 'Connected' }
-    }
-    return { ok: false, message: `HTTP ${res.status} — check your keys` }
-  } catch {
-    return { ok: false, message: 'Network error — check SUPABASE_URL' }
-  }
+export const metadata: Metadata = {
+  title: 'Facts for Debate — Neutral Debate Reference',
 }
 
-export default async function Home() {
-  const status = await checkConnection()
+export default async function HomePage() {
+  const topics = await getTopics()
+  const featured = topics.slice(0, 3)
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-3 bg-white text-black">
-      <h1 className="text-2xl font-semibold tracking-tight">factsfordebate</h1>
-      <p className="text-sm text-zinc-500">Foundation check</p>
-      <span
-        className={`rounded-full px-4 py-1 text-sm font-medium ${
-          status.ok
-            ? 'bg-green-100 text-green-800'
-            : 'bg-red-100 text-red-700'
-        }`}
-      >
-        Supabase: {status.message}
-      </span>
-    </main>
+    <div className="mx-auto max-w-5xl px-4 py-14 sm:px-6">
+      {/* Hero */}
+      <section className="mb-16 text-center">
+        <h1 className="mb-3 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+          Facts for Debate
+        </h1>
+        <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed text-gray-500 sm:text-lg">
+          Find sourced statistics for both sides of any argument. Neutral,
+          referenced, and organised by topic.
+        </p>
+        <SearchBar />
+      </section>
+
+      {/* Featured / Recently Added */}
+      {featured.length > 0 && (
+        <section className="mb-14">
+          <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            Recently Added
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {featured.map((topic) => (
+              <TopicCard key={topic.id} topic={topic} featured />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Browse All */}
+      <section>
+        <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-gray-400">
+          Browse Topics
+        </h2>
+        {topics.length === 0 ? (
+          <p className="text-sm text-gray-400">No topics available yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {topics.map((topic) => (
+              <TopicCard key={topic.id} topic={topic} />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   )
 }
